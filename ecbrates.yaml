@@ -1,0 +1,67 @@
+services:
+
+  db:
+    image: ivmikhaylov/ecb-exchange-rates_db
+    command: '--plugin_load_add=auth_ed25519
+              --default-authentication-plugin=mysql_native_password
+              --default_time_zone=Europe/Riga 
+              --character-set-server=utf8mb4
+              --collation-server=utf8mb4_latvian_ci'
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 3s
+      retries: 5
+      start_period: 30s
+    secrets:
+      - db-password-reader
+      - db-password-writer
+      - db-password-admin
+      - db-password-root
+    volumes:
+      - db-data:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=ecb-rates-db
+      - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/db-password-root
+    expose:
+      - 3306
+
+  proxy:
+    image: ivmikhaylov/ecb-exchange-rates_proxy
+    ports:
+      - 8081:80
+    extra_hosts:
+      - ecb-rates-exchange:127.0.0.1
+    depends_on: 
+      - backend
+
+  backend:
+    image: ivmikhaylov/ecb-exchange-rates_backend
+    ports:
+      - 8000:8000
+      - 8001:8001
+      - 8002:8002
+    secrets:
+      - go-password-reader
+      - go-password-writer
+      - go-password-admin
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  db-data:
+secrets:
+  db-password-reader:
+    file: secrets/db_reader_pwd.txt
+  db-password-writer:
+    file: secrets/db_writer_pwd.txt
+  db-password-admin:
+    file: secrets/db_admin_pwd.txt
+  db-password-root:
+    file: secrets/db_root_pwd.txt
+  go-password-reader:
+    file: secrets/go_reader_pwd.txt
+  go-password-writer:
+    file: secrets/go_writer_pwd.txt
+  go-password-admin:
+    file: secrets/go_admin_pwd.txt

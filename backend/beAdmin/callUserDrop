@@ -1,0 +1,12 @@
+package beAdmin
+
+func callUserDrop(u, h string) {
+
+	u = "a_username_to_be_dropped"
+	h = "localhost"
+
+	q := fmt.Sprintf("CALL run_user_drop_query(%q, %q)", u, h)
+
+	// Dummy for the future implementation
+	q = q + ""
+}
